@@ -264,3 +264,230 @@ SELECT
 	EOMONTH(CreationTime) EndofMonth,
 	CAST(DATETRUNC(month, CreationTime) AS DATE ) StartofMonth
 FROM Sales.Orders
+
+-- Data Aggregations
+-- How many orders were placed each year ?
+SELECT
+	YEAR(OrderDate),
+	COUNT(*) NrOfOrders
+FROM Sales.Orders
+GROUP BY YEAR(OrderDate)
+
+-- How many orders were placed each month ?
+SELECT
+	DATENAME(month, OrderDate) AS OrderDate,
+	COUNT(*) NrOfOrders
+FROM Sales.Orders
+GROUP BY DATENAME(month, OrderDate)
+
+-- Data Filtering
+-- Show all orders that were placed during the month of february
+SELECT *
+FROM Sales.Orders
+WHERE MONTH(OrderDate) = 2
+
+-- **Best Practice - Filtering Data using an Integer is faster than using a Striing
+-- Avoid Using DATENAME for filtering data, instead use DATEPART
+
+-- Functions Comparison
+-- DAY, MONTH, YEAR, DATEPART - Data type will be INT
+-- DATENAME - data type will be STRING
+-- DATETRUNC data type DATETIME
+-- EOMONTH data type DATE
+
+-- When to use which function?
+-- Which Part to extract ?
+-- If DAY, MONTH - Do i need it as an integer(NUMERIC)
+-- Then we use DAY() MONTH()
+
+-- But if we need full name of the month or day
+-- DATENAME()
+
+-- If we are interested with part year ? then we go with the YEAR()
+
+-- If we don't need day, month or year and are interested like the week quarter and so on then we go with DATEPART()
+-- REFER DIAGRAM
+
+-- PART  EXTRACTION
+-- ALL PARTS
+
+-- FORMAT & CASTING
+-- FORMAT
+-- CONVERT
+-- CAST
+
+-- What is DATE FORMAT ?
+-- YYYY - for year
+-- MM - for month
+-- dd - for day
+-- HH - for hour
+-- mm - for month
+-- ss - second
+
+-- SQL follows international standard (ISO 8601)
+-- YYYY-MM-dd
+
+-- USA Standard
+-- MM -dd-YYYY
+
+-- European Standard
+-- dd-MM-YYYY
+
+-- What is FORMATING & CASTING
+-- FORMATING - Changing the format of a value from one to another.
+-- Changing how the data looks like
+
+-- CASTING & CONVERT
+-- Changing the data type from one to another.
+
+
+-- FORMAT() - Formats a date or time value
+-- FORMAT(value, format [,culture])
+
+SELECT
+OrderID,
+CreationTime,
+FORMAT(CreationTime, 'MM-dd-yyyy') USA_format,
+FORMAT(CreationTime, 'dd-MM-yyyy') EURO_format,
+FORMAT(CreationTime, 'dd') dd,
+FORMAT(CreationTime, 'ddd') ddd,
+FORMAT(CreationTime, 'dddd') dddd,
+FORMAT(CreationTime, 'MM') MM,
+FORMAT(CreationTime, 'MMM') MMM,
+FORMAT(CreationTime, 'MMMM') MMMM
+FROM Sales.Orders	 
+
+-- Show CreationTime using the following format:
+-- Day Wed Jan Q1 2025 12:34:56 PM
+
+SELECT
+	OrderID,
+	CreationTime,
+	'Day ' + FORMAT(CreationTime,'ddd MMM') + 
+	' Q'+ DATENAME(quarter, CreationTime) + ' ' +
+	FORMAT(CreationTime, 'yyyy hh:mm:ss tt') AS CustomFormat
+FROM Sales.Orders
+
+-- Formatting Use Case - Data Aggreagtions
+-- Use Case 1:  Using it to format the date before doing aggregation
+
+SELECT 
+FORMAT(OrderDate, 'MMM yy') OrderDate,
+COUNT(*)
+FROM Sales.Orders
+GROUP BY FORMAT(OrderDate, 'MMM yy')
+
+-- Use Case 2:Data Standardization
+
+-- ALL FORMATS - look for tables
+
+-- CONVERT - Converts a date or time value to a different data type & Formats the value.
+-- CONVERT (data_type, value [,style])
+
+SELECT
+CONVERT(INT, '123') AS [String to Int Comvert],
+CONVERT(DATE, '2025-08-20') AS [String to Date Comvert],
+CreationTime,
+CONVERT(DATE, CreationTime) AS	[Datetime to Date CONVERT],
+CONVERT(VARCHAR, CreationTime, 32) AS [USA std. Style:32 ],
+CONVERT(VARCHAR, CreationTime, 34) AS [EURO std. Style:34]
+FROM Sales.Orders
+
+-- FOR STYLES REFER TO TABLES
+
+-- CAST() - Converts a value to a specified data type
+-- CAST (value AS data_type) 
+-- CAST('123' AS INT)
+-- CAST('2025-08-20' AS DATE)
+-- ** No format can be soecified
+
+SELECT
+CAST('123' AS INT) AS [String to INT],
+CAST( 123 AS VARCHAR) AS [INT to String],
+CAST('2025-08-20' AS DATE) AS [String to DATE],
+CAST('2025-08-20' AS DATETIME2) AS [String to DATETIME],
+CreationTime,
+CAST(CreationTime AS DATE) AS [Datetime tp Date]
+FROM Sales.Orders
+
+-- Date Calculations or Mathematical Operations on date
+-- DATEADD
+-- DATEDIFF
+
+-- DATEADD 
+-- Adds or substracts a specific time interval to/from a date.
+-- DATEADD(part, interval, date)
+-- ex DATEADD(year, 2, OrderDate)
+-- ex DATEADD(month, -4, OrderDate)
+
+SELECT
+OrderID,
+OrderDate,
+DATEADD(day, -10, OrderDate) AS TenDaysBefore,
+DATEADD(month, 3, OrderDate) AS ThreeMonthsLater,
+DATEADD(year, 2, OrderDate) AS TwoYearsLater
+FROM Sales.Orders
+
+
+-- DATEDIFF()
+-- Find the difference between two dates.
+-- DATEDIFF(part, start_date, end_date)
+-- ex DATEDIFF(year, OrderDate, ShipDate)
+-- ex DATEDIFF(day, OrderDate, ShipDate)
+
+-- Calculate the age of employees
+SELECT
+EmployeeID,
+BirthDate,
+DATEDIFF(year, BirthDate, GETDATE()) Age
+FROM Sales.Employees
+
+-- Find the average shipping duration in days for each month
+SELECT 
+	MONTH(OrderDate) AS OrderDate,
+	AVG(DATEDIFF(day, OrderDate, ShipDate)) AS AvgShip
+FROM Sales.Orders
+GROUP BY MONTH(OrderDate)
+
+-- Time Gap Analysis
+-- Find the number of days between each order and the previous order
+-- Hint: LAG Access a value from the previous row
+SELECT
+OrderID,
+OrderDate CurrentOrderDate,
+LAG(OrderDate) OVER (ORDER BY OrderDate) PreviousOrderDate,
+DATEDIFF(day, LAG(OrderDate) OVER (ORDER BY OrderDate), OrderDate) NrOfDays
+FROM Sales.Orders
+
+-- Validation
+-- ISDATE()
+-- Checks if a value is a date.
+-- Returns 1 if the string value is a valid date,
+-- Or returns 0 if it is not a valid date
+-- ISDATE(value)
+-- ISDATE('2025-08-20')
+-- ISDATE(2025)
+
+SELECT
+ISDATE('123') DateCheck1,
+ISDATE('2025-08-20') DateCheck2,
+ISDATE('20-08-2025') DateCheck3,
+ISDATE('2025') DateCheck4,
+ISDATE('08') DateCheck5
+
+
+SELECT
+--CAST(OrderDate AS DATE) OrderDate,
+OrderDate,
+ISDATE(OrderDate),
+CASE WHEN ISDATE(OrderDate) = 1 THEN CAST(OrderDate AS DATE)
+	ELSE '9999-01-01'
+END NewOrderDate
+FROM
+(
+	SELECT '2025-08-20' AS OrderDate UNION
+	SELECT '2025-08-21' UNION
+	SELECT '2025-08-23' UNION
+	SELECT '2025-08'
+) t
+-- WHERE ISDATE(OrderDate) = 0
