@@ -244,3 +244,55 @@ SELECT Salary FROM Sales.Employees WHERE Gender = 'M'
 
 -- Correlated Subquery
 -- A Subquery that relays on values from the Main Query
+
+-- Show all customer details and find the total orders for each customer.
+
+SELECT
+*,
+(SELECT COUNT(*) FROM Sales.Orders o WHERE o.CustomerID = c.CustomerID) TotalSales
+FROM Sales.Customers c
+
+
+-- Correlated Subquery
+-- EXISTS
+-- Check if a subquery returns any rows(results)
+
+/*
+Snytax Correlated Subquery in WHERE Clause EXISTS Operator
+
+SELECT column1, column2, ...
+FROM Table2
+WHERE EXISTS (SELECT 1
+			  FROM Table1 
+			  WHERE Table1.ID = Table2.ID 
+			 	  )
+
+Like in comparison operator or IN Operator we don't specify columns befor EXISTS 
+as we are not filtering based on value but we are filtering based on logic
+*/
+
+
+-- Show the details of orders made by customers in Germany.
+
+SELECT
+*
+FROM Sales.Orders o
+WHERE EXISTS (SELECT 1
+		FROM Sales.Customers c
+		WHERE Country = 'Germany'
+		AND o.CustomerID = c.CustomerID);
+
+SELECT
+*
+FROM Sales.Customers
+WHERE Country = 'Germany'
+
+-- Show the details of orders made by customers excluding Germany.
+
+SELECT
+*
+FROM Sales.Orders o
+WHERE NOT EXISTS (SELECT 1
+		FROM Sales.Customers c
+		WHERE Country = 'Germany'
+		AND o.CustomerID = c.CustomerID);
